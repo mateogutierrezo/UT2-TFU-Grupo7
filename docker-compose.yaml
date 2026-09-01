@@ -1,12 +1,39 @@
 services:
-  api:
+  api1:
     build: .
-    ports:
-      - "3000:3000"
+    container_name: tfu-api-1
     env_file:
       - .env
+    environment:
+      - INSTANCE_ID=api-1
     volumes:
-      - db-data:/app/data
+      - db-data-1:/app/data
+    expose:
+      - "3000"
+
+  api2:
+    build: .
+    container_name: tfu-api-2
+    env_file:
+      - .env
+    environment:
+      - INSTANCE_ID=api-2
+    volumes:
+      - db-data-2:/app/data
+    expose:
+      - "3000"
+
+  loadbalancer:
+    image: nginx:alpine
+    container_name: tfu-lb
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - api1
+      - api2
 
 volumes:
-  db-data:
+  db-data-1:
+  db-data-2:
