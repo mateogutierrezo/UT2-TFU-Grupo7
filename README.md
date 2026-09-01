@@ -1,8 +1,23 @@
 # Universidad Católica del Uruguay
 ## Trabajo Final de Unidad 2 — Tácticas arquitectónicas - Grupo 7
 
-Demo de tácticas de **disponibilidad** (replicación y re-intentos) y **seguridad**
-(autenticar actores y validar la entrada) sobre una API REST de gestión de tareas.
+## Introducción
+
+### Objetivo:
+Desarrollar una API REST sencilla de gestión
+de tareas para demostrar la aplicación de diferentes tácticas de arquitectura
+orientadas a mejorar la disponibilidad y la seguridad del sistema.
+
+Las tácticas seleccionadas son **replicación** y **re-intentos** para mejorar la
+disponibilidad, junto con **autenticar actores** y **validar la entrada** como
+tácticas para resistir ataques. La aplicación contará con dos instancias de la
+API, permitiendo que el servicio continúe funcionando ante la caída de una de
+ellas. Además, se utilizará autenticación mediante JWT y validación de los
+datos recibidos para proteger los recursos del sistema.
+
+La aplicación será ejecutada mediante Docker Compose y podrá ser probada
+utilizando herramientas como curl o Postman, permitiendo demostrar de forma
+práctica el funcionamiento de las tácticas seleccionadas.
 
 La funcionalidad de negocio (crear tareas) no es el foco: la aplicación existe
 para hacer visibles las tácticas arquitectónicas seleccionadas.
