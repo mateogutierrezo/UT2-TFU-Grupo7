@@ -2,6 +2,7 @@ const express = require("express");
 require("dotenv").config();
 
 require("./db/database");
+const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 
@@ -12,6 +13,8 @@ app.get("/health", (req, res) => {
     status: "ok",
   });
 });
+
+app.use("/auth", authRoutes);
 
 const PORT = process.env.PORT || 3000;
 
