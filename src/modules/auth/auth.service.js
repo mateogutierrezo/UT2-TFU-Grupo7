@@ -17,7 +17,12 @@ function createUser(email, password) {
   return { id: result.lastInsertRowid, email };
 }
 
+function validatePassword(plainPassword, hashedPassword) {
+  return bcrypt.compareSync(plainPassword, hashedPassword);
+}
+
 module.exports = {
   findUserByEmail,
   createUser,
+  validatePassword,
 };
