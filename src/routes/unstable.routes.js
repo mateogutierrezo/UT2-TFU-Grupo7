@@ -10,7 +10,7 @@ router.get("/", (req, res) => {
 
   return res.status(200).json({
     message: "Solicitud atendida correctamente",
-    instance: process.env.INSTANCE_NAME || "desconocida",
+    instance: process.env.INSTANCE_ID || "desconocida",
   });
 });
 

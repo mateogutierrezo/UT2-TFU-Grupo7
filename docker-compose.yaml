@@ -7,7 +7,7 @@ services:
     environment:
       - INSTANCE_ID=api-1
     volumes:
-      - db-data-1:/app/data
+      - db-data:/app/data
     expose:
       - "3000"
 
@@ -19,7 +19,7 @@ services:
     environment:
       - INSTANCE_ID=api-2
     volumes:
-      - db-data-2:/app/data
+      - db-data:/app/data
     expose:
       - "3000"
 
@@ -35,5 +35,4 @@ services:
       - api2
 
 volumes:
-  db-data-1:
-  db-data-2:
+  db-data:

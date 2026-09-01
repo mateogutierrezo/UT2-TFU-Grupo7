@@ -6,8 +6,8 @@ function getTasks(req, res) {
 }
 
 function createTask(req, res) {
-  const { title, description } = req.body;
-  const task = tasksService.createTask(req.user.id, title, description);
+  const { title } = req.body;
+  const task = tasksService.createTask(req.user.id, title);
   return res.status(201).json({
     message: "Tarea creada correctamente",
     task,
