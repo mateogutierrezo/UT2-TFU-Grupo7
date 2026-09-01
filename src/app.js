@@ -1,7 +1,23 @@
-const authRouter = require("./modules/auth/auth.routes");
-const tasksRouter = require("./modules/tasks/tasks.routes");
-const errorHandler = require("./middlewares/errorHandler");
+const express = require("express");
+require("dotenv").config();
 
-app.use("/auth", authRouter);
-app.use("/tasks", tasksRouter);
-app.use(errorHandler); 
+require("./db/database");
+const authRoutes = require("./modules/auth/auth.routes");
+
+const app = express();
+
+app.use(express.json());
+
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "ok",
+  });
+});
+
+app.use("/api/auth", authRoutes);
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`API running on port ${PORT}`);
+});
