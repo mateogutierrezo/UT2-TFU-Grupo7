@@ -121,30 +121,30 @@ Todas las pruebas se hacen contra el load balancer: `http://localhost:8080`.
 
 ```bash
 # Registro
-curl -X POST http://localhost:8080/auth/register \
+curl -X POST http://localhost:8080/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"demo@ucu.edu.uy","password":"123456"}'
 
 # Login -> guardar el token que devuelve
-curl -X POST http://localhost:8080/auth/login \
+curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"demo@ucu.edu.uy","password":"123456"}'
 
 # Sin token -> 401 (demuestra "autenticar actores")
-curl http://localhost:8080/tasks
+curl http://localhost:8080/api/tasks
 
 # Con token -> 200
-curl http://localhost:8080/tasks \
+curl http://localhost:8080/api/tasks \
   -H "Authorization: Bearer <TOKEN>"
 
 # Body inválido -> 400 (demuestra "validar la entrada")
-curl -X POST http://localhost:8080/tasks \
+curl -X POST http://localhost:8080/api/tasks \
   -H "Authorization: Bearer <TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{}'
 
 # Body válido -> 201
-curl -X POST http://localhost:8080/tasks \
+curl -X POST http://localhost:8080/api/tasks \
   -H "Authorization: Bearer <TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{"title":"Terminar la demo"}'
@@ -168,11 +168,13 @@ curl -X POST http://localhost:8080/tasks \
 
 ### 3. Disponibilidad — re-intentos
 
+Desde PowerShell:
+
 ```bash
-for i in {1..10}; do
-  curl -s http://localhost:8080/unstable
-  echo ""
-done
+for ($i=1; $i -le 10; $i++) {
+  curl.exe -s http://localhost:8080/api/unstable
+  Write-Host ""
+}
 ```
 
 `/unstable` falla con 500 aproximadamente la mitad de las veces desde el punto
