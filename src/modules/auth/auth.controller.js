@@ -1,4 +1,4 @@
-const userService = require("../services/userService");
+const userService = require("./auth.service");
 
 function register(req, res) {
   const { email, password } = req.body;

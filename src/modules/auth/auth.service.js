@@ -1,5 +1,5 @@
 const bcrypt = require("bcryptjs");
-const db = require("../db/database");
+const db = require("../../db/database");
 
 const SALT_ROUNDS = 10;
 
