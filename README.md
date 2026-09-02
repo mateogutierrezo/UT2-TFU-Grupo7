@@ -1,9 +1,11 @@
 # Universidad Católica del Uruguay
+
 ## Trabajo Final de Unidad 2 — Tácticas arquitectónicas - Grupo 7
 
 ## Introducción
 
 ### Objetivo:
+
 Desarrollar una API REST sencilla de gestión
 de tareas para demostrar la aplicación de diferentes tácticas de arquitectura
 orientadas a mejorar la disponibilidad y la seguridad del sistema.
@@ -78,13 +80,13 @@ Cliente (curl/Postman)
 
 ## Endpoints
 
-| Método | Ruta            | Protegido | Descripción                                              |
-|--------|-----------------|-----------|-----------------------------------------------------------|
-| POST   | `/auth/register`| No        | Registra un usuario (email + password)                    |
-| POST   | `/auth/login`   | No        | Autentica al usuario y devuelve un JWT                     |
-| GET    | `/tasks`        | Sí (JWT)  | Lista las tareas del usuario autenticado                   |
-| POST   | `/tasks`        | Sí (JWT)  | Crea una tarea, validando el body (`title` obligatorio)    |
-| GET    | `/unstable`     | No        | Falla ~50% de las veces (500), para demostrar re-intentos  |
+| Método | Ruta             | Protegido | Descripción                                                                                                          |
+| ------ | ---------------- | --------- | -------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/auth/register` | No        | Registra un usuario (email + password)                                                                               |
+| POST   | `/auth/login`    | No        | Autentica al usuario y devuelve un JWT                                                                               |
+| GET    | `/tasks`         | Sí (JWT)  | Lista las tareas del usuario autenticado                                                                             |
+| POST   | `/tasks`         | Sí (JWT)  | Crea una tarea, validando el body (`title` obligatorio)                                                              |
+| GET    | `/unstable`      | No        | Si recibe `?fail=true`, la instancia elegida responde 500 para simular una falla controlada y demostrar re-intentos. |
 
 ## Requisitos
 
@@ -96,13 +98,14 @@ Cliente (curl/Postman)
 
 1. Verificar que `.env` tenga `PORT`, `JWT_SECRET` y `DB_PATH`.
 
-    `.env`
+   `.env`
 
-    ```python
-    PORT=3000
-    JWT_SECRET=un_secreto_muy_seguro
-    DB_PATH=/app/data/database.sqlite
-    ```
+   ```python
+   PORT=3000
+   JWT_SECRET=un_secreto_muy_seguro
+   DB_PATH=/app/data/database.sqlite
+   ```
+
 2. Levantar todo:
    ```bash
    docker compose up --build
@@ -161,34 +164,53 @@ Con **ambas réplicas arriba**:
    docker compose stop api1
    ```
 3. Repetir `GET /unstable`: el servicio sigue respondiendo, y ahora el campo
-   `instance` va a mostrar siempre `api-2` — así se demuestra que la caída de
-   una instancia no deja el servicio indisponible.
+   `instance` va a mostrar siempre `api-2` — así se demuestra que la caída de una instancia no deja el servicio indisponible.
 4. Volver a levantarla si se quiere seguir probando:
    ```bash
    docker compose start api1
    ```
 
-### 3. Disponibilidad — re-intentos
+### 3. Disponibilidad — re-intentos y caídas controladas
 
-Con **ambas réplicas arriba** de nuevo (a diferencia de la prueba anterior,
-acá ninguna está caída):
+El endpoint inestable se comporta de forma controlada para poder demostrar la táctica de disponibilidad en vivo.
 
-Desde PowerShell:
+- Sin query param: responde 200 y muestra la instancia que atendió la petición.
+- Con `?fail=true`: la instancia elegida por nginx responde 500 para simular
+  que una réplica cayó.
+
+Ejemplos:
 
 ```bash
-for ($i=1; $i -le 10; $i++) {
-  curl.exe -s http://localhost:8080/api/unstable
-  Write-Host ""
+# responde OK
+curl.exe -i http://localhost:8080/api/unstable
+
+# fuerza una falla controlada en la instancia elegida por nginx
+curl.exe -i "http://localhost:8080/api/unstable?fail=true"
+```
+
+La clave es que nginx está configurado con `max_fails=1` y `fail_timeout=5s`:
+
+```nginx
+upstream tfu_api {
+    server api1:3000 max_fails=1 fail_timeout=5s;
+    server api2:3000 max_fails=1 fail_timeout=5s;
 }
 ```
 
-Cada réplica falla con ~50% de probabilidad de forma independiente. Cuando la
-réplica a la que llega la solicitud falla, nginx (`proxy_next_upstream`)
-reintenta automáticamente contra la otra, por lo que casi todas las respuestas
-que ve el cliente terminan siendo 200 aunque alguna réplica haya fallado en el
-intento. El campo `instance` permite confirmar contra qué réplica se resolvió
-finalmente cada solicitud.
+Esto significa que, si una instancia responde 500 o deja de atender, nginx la
+marcará como fallida durante 5 segundos. Durante ese tiempo, el balanceador
+intentará enviar la siguiente solicitud a la otra réplica. Si ambas instancias
+quedan marcadas como no disponibles, la respuesta final puede ser 502.
 
+Esto permite demostrar en vivo que:
+
+1. una réplica puede fallar sin que el servicio deje de responder en general,
+2. nginx reintenta en la otra réplica,
+3. si ambas están caídas temporalmente, aparece 502 como señal de que no hay
+   backend sano disponible.
+
+El campo `instance` en la respuesta ayuda a evidenciar qué réplica atendió cada
+solicitud y hace la demo mucho más clara para la clase.
 
 ## Notas
 

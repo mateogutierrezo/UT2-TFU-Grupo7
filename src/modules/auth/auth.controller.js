@@ -14,6 +14,7 @@ function register(req, res) {
   return res.status(201).json({
     message: "Usuario registrado correctamente",
     user: { id: user.id, email: user.email },
+    instance: process.env.INSTANCE_ID || "desconocida",
   });
 }
 
@@ -33,12 +34,13 @@ function login(req, res) {
   const token = jwt.sign(
     { id: user.id, email: user.email },
     process.env.JWT_SECRET,
-    { expiresIn: "1h" }
+    { expiresIn: "1h" },
   );
 
   return res.status(200).json({
     message: "Login exitoso",
     token,
+    instance: process.env.INSTANCE_ID || "desconocida",
   });
 }
 

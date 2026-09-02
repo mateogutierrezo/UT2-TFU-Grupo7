@@ -12,6 +12,7 @@ app.use(express.json());
 
 app.get("/api/health", (req, res) => {
   res.json({
+    instance: process.env.INSTANCE_ID || "desconocida",
     status: "ok",
   });
 });
@@ -19,7 +20,6 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", tasksRoutes);
 app.use("/api/unstable", unstableRoutes);
-
 
 const PORT = process.env.PORT || 3000;
 
