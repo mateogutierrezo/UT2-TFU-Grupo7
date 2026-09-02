@@ -152,21 +152,26 @@ curl.exe -X POST http://localhost:8080/api/tasks \
 
 ### 2. Disponibilidad — replicación
 
-1. Repetir un par de veces `GET /tasks` con el token y observar (por logs o por
-   el campo `instance` de `/unstable`) que las respuestas alternan entre `api-1`
-   y `api-2`.
+Con **ambas réplicas arriba**:
+
+1. Repetir un par de veces `GET /unstable` y anotar el campo `instance` de cada
+   respuesta exitosa (200): debería alternar entre `api-1` y `api-2`.
 2. Dar de baja una réplica:
    ```bash
    docker compose stop api1
    ```
-3. Repetir las requests: el servicio sigue respondiendo (ahora todo vía `api2`),
-   mostrando que la caída de una instancia no deja el servicio indisponible.
+3. Repetir `GET /unstable`: el servicio sigue respondiendo, y ahora el campo
+   `instance` va a mostrar siempre `api-2` — así se demuestra que la caída de
+   una instancia no deja el servicio indisponible.
 4. Volver a levantarla si se quiere seguir probando:
    ```bash
    docker compose start api1
    ```
 
 ### 3. Disponibilidad — re-intentos
+
+Con **ambas réplicas arriba** de nuevo (a diferencia de la prueba anterior,
+acá ninguna está caída):
 
 Desde PowerShell:
 
@@ -177,11 +182,13 @@ for ($i=1; $i -le 10; $i++) {
 }
 ```
 
-`/unstable` falla con 500 aproximadamente la mitad de las veces desde el punto
-de vista de cada réplica individual, pero nginx (`proxy_next_upstream`) reintenta
-contra la otra automáticamente, por lo que casi todas las respuestas que ve el
-cliente terminan siendo 200. El campo `instance` en la respuesta permite ver
-contra qué réplica se resolvió finalmente cada solicitud.
+Cada réplica falla con ~50% de probabilidad de forma independiente. Cuando la
+réplica a la que llega la solicitud falla, nginx (`proxy_next_upstream`)
+reintenta automáticamente contra la otra, por lo que casi todas las respuestas
+que ve el cliente terminan siendo 200 aunque alguna réplica haya fallado en el
+intento. El campo `instance` permite confirmar contra qué réplica se resolvió
+finalmente cada solicitud.
+
 
 ## Notas
 
