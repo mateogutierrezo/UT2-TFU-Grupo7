@@ -109,7 +109,7 @@ Cliente (curl/Postman)
    ```
 3. Confirmar que las dos réplicas y el load balancer estén corriendo:
    ```bash
-   docker ps
+   docker compose ps
    ```
    Se debería observar `tfu-api-1`, `tfu-api-2` y `tfu-lb`.
 
