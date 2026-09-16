@@ -4,6 +4,7 @@ require("dotenv").config();
 require("./db/database");
 const authRoutes = require("./modules/auth/auth.routes");
 const tasksRoutes = require("./modules/tasks/tasks.routes");
+const projectsRoutes = require("./modules/projects/projects.routes");
 const unstableRoutes = require("./routes/unstable.routes");
 
 const app = express();
@@ -19,6 +20,7 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", tasksRoutes);
+app.use("/api/projects", projectsRoutes);
 app.use("/api/unstable", unstableRoutes);
 
 const PORT = process.env.PORT || 3000;

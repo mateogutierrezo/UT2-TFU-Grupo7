@@ -8,11 +8,14 @@ function getTasks(req, res) {
 }
 
 function createTask(req, res) {
-  const { title } = req.body;
-  const task = tasksService.createTask(req.user.id, title);
+  const { title, project_id } = req.body;
+  const result = tasksService.createTask(req.user.id, title, project_id);
+  if (result.error) {
+    return res.status(400).json({ message: result.error });
+  }
   return res.status(201).json({
     message: "Tarea creada correctamente",
-    task,
+    task: result,
     instance: process.env.INSTANCE_ID || "desconocida",
   });
 }

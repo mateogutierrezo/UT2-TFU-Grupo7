@@ -19,12 +19,35 @@ db.exec(`
     password TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS projects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    owner INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (owner) REFERENCES users(id)
+  );
+
   CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
     user_id INTEGER NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    project_id INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (project_id) REFERENCES projects(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS users_projects (
+    user_id INTEGER NOT NULL,
+    project_id INTEGER NOT NULL,
+    PRIMARY KEY (user_id, project_id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (project_id) REFERENCES projects(id)
   );
 `);
+
+const projectColumns = db.prepare("PRAGMA table_info(projects)").all();
+if (!projectColumns.some((c) => c.name === "name")) {
+  db.exec("ALTER TABLE projects ADD COLUMN name TEXT NOT NULL DEFAULT ''");
+}
 
 module.exports = db;

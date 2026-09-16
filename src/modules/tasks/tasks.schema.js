@@ -8,6 +8,7 @@ const createTaskSchema = z.object({
     .string()
     .min(1, "El título es obligatorio")
     .refine(noHtmlChars, noHtmlMessage),
+  project_id: z.number().int().positive("El project_id es obligatorio"),
 });
 
 module.exports = { createTaskSchema };
