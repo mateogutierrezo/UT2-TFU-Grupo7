@@ -27,11 +27,19 @@ db.exec(`
     FOREIGN KEY (owner) REFERENCES users(id)
   );
 
+  CREATE TABLE IF NOT EXISTS task_states (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    state TEXT NOT NULL UNIQUE
+  );
+
   CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    state INTEGER NOT NULL DEFAULT 1,
     user_id INTEGER NOT NULL,
     project_id INTEGER NOT NULL,
+    FOREIGN KEY (state) REFERENCES task_states(id),
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (project_id) REFERENCES projects(id)
   );
@@ -45,9 +53,11 @@ db.exec(`
   );
 `);
 
-const projectColumns = db.prepare("PRAGMA table_info(projects)").all();
-if (!projectColumns.some((c) => c.name === "name")) {
-  db.exec("ALTER TABLE projects ADD COLUMN name TEXT NOT NULL DEFAULT ''");
-}
+const insertState = db.prepare(
+  "INSERT OR IGNORE INTO task_states (id, state) VALUES (?, ?)"
+);
+insertState.run(1, "todo");
+insertState.run(2, "in progress");
+insertState.run(3, "done");
 
 module.exports = db;

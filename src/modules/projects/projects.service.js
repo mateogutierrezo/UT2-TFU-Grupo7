@@ -12,17 +12,21 @@ function getProjects(userId) {
 }
 
 function createProject(ownerId, name) {
-  const stmt = db.prepare(
-    "INSERT INTO projects (name, owner) VALUES (?, ?)"
-  );
-  const result = stmt.run(name, ownerId);
+  const createProjectTx = db.transaction(() => {
+    const stmt = db.prepare(
+      "INSERT INTO projects (name, owner) VALUES (?, ?)"
+    );
+    const result = stmt.run(name, ownerId);
 
-  const assignStmt = db.prepare(
-    "INSERT INTO users_projects (user_id, project_id) VALUES (?, ?)"
-  );
-  assignStmt.run(ownerId, result.lastInsertRowid);
+    const assignStmt = db.prepare(
+      "INSERT INTO users_projects (user_id, project_id) VALUES (?, ?)"
+    );
+    assignStmt.run(ownerId, result.lastInsertRowid);
 
-  return { id: result.lastInsertRowid, name, owner: ownerId };
+    return { id: result.lastInsertRowid, name, owner: ownerId };
+  });
+
+  return createProjectTx();
 }
 
 function assignUser(ownerId, projectId, userId) {
