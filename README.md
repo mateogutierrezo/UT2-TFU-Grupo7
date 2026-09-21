@@ -50,11 +50,17 @@ La aplicación puede probarse mediante Postman o curl.
         │   ├── auth.controller.js
         │   ├── auth.service.js
         │   └── auth.schema.js
-        └── tasks/
-            ├── tasks.routes.js
-            ├── tasks.controller.js
-            ├── tasks.service.js
-            └── tasks.schema.js
+        ├── tasks/
+        │   ├── tasks.routes.js
+        │   ├── tasks.controller.js
+        │   ├── tasks.service.js
+        │   └── tasks.schema.js
+        └── projects/
+            ├── projects.routes.js
+            ├── projects.controller.js
+            ├── projects.service.js
+            └── projects.schema.js
+            
 ```
 
 ## Arquitectura
