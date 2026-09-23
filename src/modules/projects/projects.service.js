@@ -13,13 +13,11 @@ function getProjects(userId) {
 
 function createProject(ownerId, name) {
   const createProjectTx = db.transaction(() => {
-    const stmt = db.prepare(
-      "INSERT INTO projects (name, owner) VALUES (?, ?)"
-    );
+    const stmt = db.prepare("INSERT INTO projects (name, owner) VALUES (?, ?)");
     const result = stmt.run(name, ownerId);
 
     const assignStmt = db.prepare(
-      "INSERT INTO users_projects (user_id, project_id) VALUES (?, ?)"
+      "INSERT INTO users_projects (user_id, project_id) VALUES (?, ?)",
     );
     assignStmt.run(ownerId, result.lastInsertRowid);
 
@@ -30,7 +28,9 @@ function createProject(ownerId, name) {
 }
 
 function assignUser(ownerId, projectId, userId) {
-  const project = db.prepare("SELECT * FROM projects WHERE id = ?").get(projectId);
+  const project = db
+    .prepare("SELECT * FROM projects WHERE id = ?")
+    .get(projectId);
   if (!project) {
     return { error: "El proyecto no existe" };
   }
@@ -44,16 +44,17 @@ function assignUser(ownerId, projectId, userId) {
   }
 
   const existing = db
-    .prepare("SELECT * FROM users_projects WHERE user_id = ? AND project_id = ?")
+    .prepare(
+      "SELECT * FROM users_projects WHERE user_id = ? AND project_id = ?",
+    )
     .get(userId, projectId);
   if (existing) {
     return { error: "El usuario ya está asignado a este proyecto" };
   }
 
-  db.prepare("INSERT INTO users_projects (user_id, project_id) VALUES (?, ?)").run(
-    userId,
-    projectId
-  );
+  db.prepare(
+    "INSERT INTO users_projects (user_id, project_id) VALUES (?, ?)",
+  ).run(userId, projectId);
 
   return { user_id: userId, project_id: projectId };
 }

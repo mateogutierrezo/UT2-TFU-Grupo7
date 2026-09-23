@@ -9,12 +9,18 @@ function getProjects(req, res) {
 
 function createProject(req, res) {
   const { name } = req.body;
-  const project = projectsService.createProject(req.user.id, name);
-  return res.status(201).json({
-    message: "Proyecto creado correctamente",
-    project,
-    instance: process.env.INSTANCE_ID || "desconocida",
-  });
+  try {
+    const project = projectsService.createProject(req.user.id, name);
+    return res.status(201).json({
+      message: "Proyecto creado correctamente",
+      project,
+      instance: process.env.INSTANCE_ID || "desconocida",
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Error al crear el proyecto", error });
+  }
 }
 
 function assignUser(req, res) {
