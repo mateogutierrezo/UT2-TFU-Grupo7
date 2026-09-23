@@ -19,7 +19,7 @@ function createProject(req, res) {
   } catch (error) {
     return res
       .status(500)
-      .json({ message: "Error al crear el proyecto", error });
+      .json({ message: "Error al crear el proyecto", error: error.message });
   }
 }
 
