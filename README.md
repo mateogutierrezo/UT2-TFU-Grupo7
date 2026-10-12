@@ -1,28 +1,28 @@
 # Universidad Católica del Uruguay
 
-## Trabajo Final de Unidad 2 — Tácticas arquitectónicas - Grupo 7
+## Trabajo Final de Unidad 3 — Soluciones de arquitectura - Grupo 7
 
 ## Introducción
 
 ### Objetivo:
 
-Desarrollar una API REST sencilla de gestión
-de tareas para demostrar la aplicación de diferentes tácticas de arquitectura
-orientadas a mejorar la disponibilidad y la seguridad del sistema.
+Desarrollar una API REST sencilla para la gestión de usuarios, proyectos y tareas para demostrar la aplicación de diferentes conceptos de arquitectura.
 
-Las tácticas seleccionadas son **replicación** y **re-intentos** para mejorar la
-disponibilidad, junto con **autenticar actores** y **validar la entrada** como
-tácticas para resistir ataques. La aplicación contará con dos instancias de la
-API, permitiendo que el servicio continúe funcionando ante la caída de una de
-ellas. Además, se utilizará autenticación mediante JWT y validación de los
-datos recibidos para proteger los recursos del sistema.
+La solución implementa los siguientes conceptos:
 
-La aplicación será ejecutada mediante Docker Compose y podrá ser probada
-utilizando herramientas como curl o Postman, permitiendo demostrar de forma
-práctica el funcionamiento de las tácticas seleccionadas.
+- Componentes e interfaces
+- Escalabilidad horizontal
+- Contenedores
+- ACID mediante transacciones
+- Servicios sin estado
 
-La funcionalidad de negocio (crear tareas) no es el foco: la aplicación existe
-para hacer visibles las tácticas arquitectónicas seleccionadas.
+La aplicación permite registrar y autenticar usuarios, crear proyectos, crear y gestionar tareas y asignar usuarios a proyectos.
+
+La API se ejecuta en dos instancias dentro de contenedores Docker, detrás de un balanceador de carga Nginx. Ambas instancias utilizan el mismo código y pueden atender las solicitudes de los clientes.
+
+La persistencia se realiza mediante SQLite, utilizando transacciones ACID para mantener la integridad y consistencia de los datos.
+
+La aplicación puede probarse mediante Postman o curl.
 
 ## Estructura del proyecto
 
@@ -33,6 +33,8 @@ para hacer visibles las tácticas arquitectónicas seleccionadas.
 ├── .env
 ├── nginx/
 │   └── nginx.conf
+├── scripts/
+│   └── prueba_isolation.sh
 └── src/
     ├── app.js
     ├── db/
@@ -48,14 +50,60 @@ para hacer visibles las tácticas arquitectónicas seleccionadas.
         │   ├── auth.controller.js
         │   ├── auth.service.js
         │   └── auth.schema.js
-        └── tasks/
-            ├── tasks.routes.js
-            ├── tasks.controller.js
-            ├── tasks.service.js
-            └── tasks.schema.js
+        ├── tasks/
+        │   ├── tasks.routes.js
+        │   ├── tasks.controller.js
+        │   ├── tasks.service.js
+        │   └── tasks.schema.js
+        └── projects/
+            ├── projects.routes.js
+            ├── projects.controller.js
+            ├── projects.service.js
+            └── projects.schema.js
+            
 ```
 
-## Arquitectura conceptual
+## Arquitectura
+
+La solución utiliza una partición técnica por responsabilidades, separando los componentes en tres niveles:
+
+```
+┌──────────────────────────────────────┐
+│            Presentación              │
+│                                      │
+│               Postman                │
+└──────────────────┬───────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────┐
+│           Infraestructura            │
+│                                      │
+│                Nginx                 │
+└──────────────────┬───────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────┐
+│          Lógica de Negocio           │
+│                                      │
+│    ModuloAuth / ModuloProyectos /    │
+│             ModuloTareas             │
+└──────────────────┬───────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────┐
+│             Persistencia             │
+│                                      │
+│              SQLite                  │
+└──────────────────────────────────────┘
+```
+
+La infraestructura contiene los componentes relacionados con la comunicación y el despliegue, principalmente **Nginx** como balanceador de carga.
+
+La lógica de negocio contiene los módulos de **Usuarios, Proyectos y Tareas**, donde se encuentran las operaciones y reglas del sistema.
+
+La persistencia contiene los componentes responsables del acceso y almacenamiento de los datos mediante **SQLite**.
+
+## Arquitectura de despliegue
 
 ```
 Cliente (curl/Postman)
@@ -72,21 +120,161 @@ Cliente (curl/Postman)
   SQLite compartida (volumen db-data)
 ```
 
-- **nginx** distribuye las solicitudes entre `api1` y `api2` (`upstream tfu_api`).
-- Si una réplica falla o no responde, nginx reintenta automáticamente contra la
-  otra (`proxy_next_upstream`), sin que el cliente lo note.
-- Ambas réplicas comparten la misma base SQLite para que el login y las tareas
-  sean consistentes sin importar a qué instancia caiga cada request.
+**Nginx** distribuye las solicitudes entre las dos instancias de la API, permitiendo demostrar la escalabilidad horizontal.
 
-## Endpoints
+## Componentes e interfaces
+
+La API expone una interfaz HTTP mediante endpoints REST. Los clientes interactúan con esta interfaz a través de **Nginx**, que distribuye las solicitudes entre las instancias disponibles.
+
+La aplicación también utiliza una interfaz de acceso a datos para interactuar con **SQLite** mediante la biblioteca `better-sqlite3`.
+
+### Interfaz HTTP
 
 | Método | Ruta             | Protegido | Descripción                                                                                                          |
 | ------ | ---------------- | --------- | -------------------------------------------------------------------------------------------------------------------- |
-| POST   | `/auth/register` | No        | Registra un usuario (email + password)                                                                               |
-| POST   | `/auth/login`    | No        | Autentica al usuario y devuelve un JWT                                                                               |
-| GET    | `/tasks`         | Sí (JWT)  | Lista las tareas del usuario autenticado                                                                             |
-| POST   | `/tasks`         | Sí (JWT)  | Crea una tarea, validando el body (`title` obligatorio)                                                              |
-| GET    | `/unstable`      | No        | Si recibe `?fail=true`, la instancia elegida responde 500 para simular una falla controlada y demostrar re-intentos. |
+| POST   | `/api/auth/register` | No        | Registra un usuario (email + password)                                                                               |
+| POST   | `/api/auth/login`    | No        | Autentica un usuario y devuelve un JWT                                                                               |
+| GET    | `/api/tasks`         | Sí (JWT)  | Lista las tareas de los proyectos del usuario autenticado                                                                             |
+| POST   | `/api/tasks`         | Sí (JWT)  | Crea una tarea dentro de un proyecto                                                        |
+| PATCH    | `/api/tasks/:id`      | Sí (JWT)        | Modifica una tarea |
+| DELETE    | `/api/tasks/:id`      | Sí (JWT)        | Elimina una tarea |
+| POST    | `/api/projects`      | Sí (JWT)       | Crea un proyecto |
+| GET    | `/api/projects`      | Sí (JWT)       | Lista los proyectos de un usuario |
+| POST    | `/api/projects/assign`      | Sí (JWT)       | Asigna un usuario a un proyecto |
+
+Las operaciones protegidas requieren el encabezado:
+
+`Authorization: Bearer <token>`
+
+Las solicitudes que contienen datos utilizan:
+
+`Content-Type: application/json`
+
+### Interfaz de acceso a datos
+
+La persistencia se realiza mediante **SQLite** y la biblioteca `better-sqlite3`.
+
+La base de datos contiene las siguientes tablas principales:
+
+- `users`: usuarios, email y contraseña almacenada como hash.
+- `projects`: proyectos, propietario y fecha de creación.
+- `tasks`: tareas, usuario creador y proyecto asociado.
+- `users_projects`: relaciones entre usuarios y proyectos.
+
+Las consultas utilizan parámetros preparados para interactuar con la base de datos.
+
+## Escalabilidad horizontal
+
+La aplicación implementa escalabilidad horizontal mediante dos instancias de la API REST.
+
+En lugar de aumentar los recursos de una única instancia, se ejecutan múltiples instancias del mismo servicio:
+
+                      Nginx
+                     /     \
+                 API #1   API #2
+
+Nginx distribuye las solicitudes entre ambas instancias. Esto permite que, ante un aumento de solicitudes, sea posible incorporar nuevas instancias de la API para distribuir la carga.
+
+Para demostrar este concepto, se pueden realizar varias solicitudes y observar que son atendidas por las diferentes instancias.
+
+También es posible detener una de las instancias y comprobar que la otra continúa atendiendo las solicitudes.
+
+## Contenedores
+
+La solución utiliza Docker para ejecutar los componentes de la aplicación.
+
+Los contenedores permiten ejecutar las instancias de la API de forma aislada y reproducible, facilitando el despliegue de múltiples instancias.
+
+Se eligieron contenedores en lugar de máquinas virtuales debido a su menor sobrecarga de recursos y a que permiten iniciar las instancias de forma más rápida.
+
+La utilización de máquinas virtuales implicaría una mayor sobrecarga de infraestructura, ya que cada máquina requiere su propio sistema operativo.
+
+## ACID
+
+La solución utiliza una base de datos relacional **SQLite** con soporte para transacciones ACID.
+
+Las propiedades ACID permiten mantener la integridad y consistencia de los datos relacionados entre usuarios, proyectos y tareas.
+
+### Atomicidad
+
+Una operación compuesta se completa completamente o se revierte.
+
+**Demostración:** crear un proyecto y mostrar en `projects.service.js` que el método `createProject` utiliza una transacción. Si ocurre un error durante las inserciones, se realiza un rollback.
+
+### Consistencia
+
+Las operaciones deben mantener la base de datos en un estado válido.
+
+**Demostración:** intentar crear una tarea sin `project_id` y comprobar que la operación es rechazada.
+
+### Aislamiento
+
+Las transacciones concurrentes no deben interferir incorrectamente entre sí, evitando que una operación observe datos intermedios de otra transacción.
+
+Para comprobar este comportamiento, se incluye el script `scripts/prueba_isolation.sh`, que envía simultáneamente dos solicitudes `PATCH` sobre la misma tarea. Una solicitud modifica el título y la otra modifica la descripción.
+
+Para ejecutar la prueba:
+
+```bash
+bash scripts/prueba_isolation.sh
+```
+
+Antes de ejecutarlo, se debe reemplazar el valor de `TOKEN` por un JWT válido y verificar que `TASK_ID` corresponda a una tarea existente.
+
+El script utiliza procesos en segundo plano (`&`) para enviar ambas solicitudes de forma concurrente:
+
+```bash
+(
+  curl -sS -X PATCH \
+    "http://localhost:8080/api/tasks/$TASK_ID" \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"title":"Título A"}'
+) &
+
+(
+  curl -sS -X PATCH \
+    "http://localhost:8080/api/tasks/$TASK_ID" \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"description":"Descripción B"}'
+) &
+
+wait
+```
+
+De esta forma, se simula el acceso concurrente de distintos clientes sobre el mismo recurso y se puede observar el comportamiento de la API ante solicitudes simultáneas.
+
+### Durabilidad
+
+Una vez realizado el commit, los cambios confirmados permanecen almacenados de forma persistente ante fallos posteriores del sistema.
+
+**Demostración:** crear un usuario, detener los contenedores, volver a levantarlos y comprobar que las credenciales continúan funcionando.
+
+## Servicios sin estado
+
+Las instancias de la API están diseñadas como servicios sin estado (stateless).
+
+La información de autenticación no se almacena en la memoria de una instancia. Luego del login, el servidor devuelve un token JWT, que el cliente debe enviar en cada solicitud protegida:
+
+`Authorization: Bearer <token>`
+
+```
+   ┌─────────┐
+   ▼         ▼
+ API #1    API #2
+   │         │
+   └─────────┘
+```
+
+De esta forma, cualquier instancia de la API puede recibir y procesar una solicitud sin depender de información de sesión almacenada en otra instancia.
+
+Esto permite que el balanceador pueda distribuir las solicitudes entre las diferentes instancias sin necesidad de mantener al usuario asociado a una instancia específica.
+
+**Demostración:**
+1. Iniciar sesión y obtener un JWT.
+2. Utilizar el mismo JWT para crear dos tareas.
+3. Observar en los logs que cada solicitud es procesada por una instancia diferente de la API.
 
 ## Requisitos
 
@@ -110,6 +298,7 @@ Cliente (curl/Postman)
    ```bash
    docker compose up --build
    ```
+
 3. Confirmar que las dos réplicas y el load balancer estén corriendo:
    ```bash
    docker compose ps
@@ -120,14 +309,18 @@ Todas las pruebas se hacen contra el load balancer: `http://localhost:8080`.
 
 ## Flujo de prueba sugerido
 
-### 1. Seguridad — autenticación y validación
+### 1. Registrar un usuario
 
 ```bash
 # Registro
 curl.exe -X POST http://localhost:8080/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"demo@ucu.edu.uy","password":"123456"}'
+```
 
+### 2. Iniciar sesión
+
+```bash
 # Login -> guardar el token que devuelve
 curl.exe -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
@@ -153,64 +346,59 @@ curl.exe -X POST http://localhost:8080/api/tasks \
   -d '{"title":"Terminar la demo"}'
 ```
 
-### 2. Disponibilidad — replicación
-
-Con **ambas réplicas arriba**:
-
-1. Repetir un par de veces `GET /unstable` y anotar el campo `instance` de cada
-   respuesta exitosa (200): debería alternar entre `api-1` y `api-2`.
-2. Dar de baja una réplica:
-   ```bash
-   docker compose stop api1
-   ```
-3. Repetir `GET /unstable`: el servicio sigue respondiendo, y ahora el campo
-   `instance` va a mostrar siempre `api-2` — así se demuestra que la caída de una instancia no deja el servicio indisponible.
-4. Volver a levantarla si se quiere seguir probando:
-   ```bash
-   docker compose start api1
-   ```
-
-### 3. Disponibilidad — re-intentos y caídas controladas
-
-El endpoint inestable se comporta de forma controlada para poder demostrar la táctica de disponibilidad en vivo.
-
-- Sin query param: responde 200 y muestra la instancia que atendió la petición.
-- Con `?fail=true`: la instancia elegida por nginx responde 500 para simular
-  que una réplica cayó.
-
-Ejemplos:
+### 3. Crear un proyecto
 
 ```bash
-# responde OK
-curl.exe -i http://localhost:8080/api/unstable
-
-# fuerza una falla controlada en la instancia elegida por nginx
-curl.exe -i "http://localhost:8080/api/unstable?fail=true"
+curl -X POST http://localhost:8080/api/projects \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Proyecto de prueba"}'
 ```
 
-La clave es que nginx está configurado con `max_fails=1` y `fail_timeout=5s`:
+### 4. Listar proyectos
 
-```nginx
-upstream tfu_api {
-    server api1:3000 max_fails=1 fail_timeout=5s;
-    server api2:3000 max_fails=1 fail_timeout=5s;
-}
+```bash
+curl http://localhost:8080/api/projects \
+  -H "Authorization: Bearer <TOKEN>"
 ```
 
-Esto significa que, si una instancia responde 500 o deja de atender, nginx la
-marcará como fallida durante 5 segundos. Durante ese tiempo, el balanceador
-intentará enviar la siguiente solicitud a la otra réplica. Si ambas instancias
-quedan marcadas como no disponibles, la respuesta final puede ser 502.
+### 5. Crear tarea
 
-Esto permite demostrar en vivo que:
+```bash
+# Crear tarea
+curl -X POST http://localhost:8080/api/tasks \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Preparar demo","project_id":1}'
+```
 
-1. una réplica puede fallar sin que el servicio deje de responder en general,
-2. nginx reintenta en la otra réplica,
-3. si ambas están caídas temporalmente, aparece 502 como señal de que no hay
-   backend sano disponible.
+### 6. Listar tareas
 
-El campo `instance` en la respuesta ayuda a evidenciar qué réplica atendió cada
-solicitud y hace la demo mucho más clara para la clase.
+```bash
+curl http://localhost:8080/api/tasks \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+### 7. Asignar un usuario a un proyecto
+
+```bash
+curl -X POST http://localhost:8080/api/projects/assign \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"project_id":1,"user_id":2}'
+```
+
+### 8. Probar aislamiento
+
+Con una tarea existente y un token válido, ejecutar:
+
+```bash
+bash scripts/prueba_isolation.sh
+```
+
+El script envía dos solicitudes `PATCH` concurrentes sobre la misma tarea: una modifica el título y otra modifica la descripción.
+
+Esto permite observar el comportamiento de la API cuando existen operaciones concurrentes sobre el mismo recurso.
 
 ## Notas
 
