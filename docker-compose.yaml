@@ -1,4 +1,11 @@
 services:
+
+  redis:
+    image: redis:alpine
+    container_type: redis-queue
+    ports:
+      - "6379:6379"
+    restart: always
   api1:
     build: .
     container_name: tfu-api-1
@@ -33,5 +40,3 @@ services:
     depends_on:
       - api1
       - api2
-
-
