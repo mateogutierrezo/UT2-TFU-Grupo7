@@ -1,4 +1,5 @@
 const projectsService = require("./projects.service");
+const cache = require("../../cache");
 
 function getProjects(req, res) {
   const projects = projectsService.getProjects(req.user.id);
@@ -17,12 +18,13 @@ function createProject(req, res) {
   });
 }
 
-function assignUser(req, res) {
+async function assignUser(req, res) {
   const { project_id, user_id } = req.body;
   const result = projectsService.assignUser(req.user.id, project_id, user_id);
   if (result.error) {
     return res.status(400).json({ message: result.error });
   }
+  await cache.invalidateUsers([user_id]);
   return res.status(200).json({
     message: "Usuario asignado al proyecto correctamente",
     result,

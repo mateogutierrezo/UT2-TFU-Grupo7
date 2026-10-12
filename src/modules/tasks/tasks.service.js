@@ -83,7 +83,13 @@ function deleteTask(userId, taskId) {
   }
 
   db.prepare("DELETE FROM tasks WHERE id = ?").run(taskId);
-  return { id: taskId };
+  return { id: taskId, project_id: task.project_id };
 }
 
-module.exports = { getAllTasks, createTask, updateTask, deleteTask };
+function getProjectMemberIds(projectId) {
+  return db
+    .prepare("SELECT user_id FROM users_projects WHERE project_id = ?")
+    .all(projectId)
+    .map((row) => row.user_id);
+}
+module.exports = { getAllTasks, createTask, updateTask, deleteTask, getProjectMemberIds };

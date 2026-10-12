@@ -2,7 +2,7 @@ services:
 
   redis:
     image: redis:alpine
-    container_type: redis-queue
+    container_name: redis-queue
     ports:
       - "6379:6379"
     restart: always
@@ -17,6 +17,8 @@ services:
       - ./data:/app/data
     expose:
       - "3000"
+    depends_on:
+      - redis
 
   api2:
     build: .
@@ -29,6 +31,8 @@ services:
       - ./data:/app/data
     expose:
       - "3000"
+    depends_on:
+      - redis
 
   loadbalancer:
     image: nginx:alpine
