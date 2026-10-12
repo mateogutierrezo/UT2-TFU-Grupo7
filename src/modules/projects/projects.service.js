@@ -16,6 +16,8 @@ function createProject(ownerId, name) {
     const stmt = db.prepare("INSERT INTO projects (name, owner) VALUES (?, ?)");
     const result = stmt.run(name, ownerId);
 
+    throw new Error("error simulado");
+
     const assignStmt = db.prepare(
       "INSERT INTO users_projects (user_id, project_id) VALUES (?, ?)",
     );
