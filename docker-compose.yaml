@@ -2,7 +2,7 @@ services:
 
   redis:
     image: redis:alpine
-    container_type: redis-queue
+    container_name: redis-queue
     ports:
       - "6379:6379"
     restart: always

@@ -1,4 +1,5 @@
 const tasksService = require("./tasks.service");
+const taskQueue = require("../../queues/taskQueue"); // <--- 1. Importa la cola que creaste
 
 function getTasks(req, res) {
   const tasks = tasksService.getAllTasks(req.user.id);
@@ -7,23 +8,32 @@ function getTasks(req, res) {
     .json({ tasks, instance: process.env.INSTANCE_ID || "desconocida" });
 }
 
-function createTask(req, res) {
+//  implementacion Queue-Based Load Leveling
+async function createTask(req, res) {
   const { title, project_id, state, description } = req.body;
-  const result = tasksService.createTask(
-    req.user.id,
-    title,
-    project_id,
-    state,
-    description
-  );
-  if (result.error) {
-    return res.status(400).json({ message: result.error });
+  
+  try {
+    // en lugar de llamar directo al servicio de la BD, encolamos la tarea en Redis
+    const job = await taskQueue.add({
+      userId: req.user.id,
+      title,
+      project_id,
+      state,
+      description
+    }, {
+      attempts: 3,
+      backoff: 3000
+    });
+
+    // Respondemos inmediatamente al cliente con un estado 202 (Aceptado para procesamiento asíncrono)
+    return res.status(202).json({
+      message: "Tarea recibida y encolada correctamente para su procesamiento",
+      jobId: job.id,
+      instance: process.env.INSTANCE_ID || "desconocida",
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Error al encolar la tarea: " + error.message });
   }
-  return res.status(201).json({
-    message: "Tarea creada correctamente",
-    task: result,
-    instance: process.env.INSTANCE_ID || "desconocida",
-  });
 }
 
 function updateTask(req, res) {
