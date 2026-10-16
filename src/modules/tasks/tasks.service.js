@@ -11,19 +11,37 @@ function getAllTasks(userId) {
   return stmt.all(userId);
 }
 
-function createTask(userId, title, projectId, state = TASK_STATES.TODO, description = "") {
-  const project = db.prepare("SELECT * FROM projects WHERE id = ?").get(projectId);
+function checkCreateAccess(userId, projectId) {
+  const project = db
+    .prepare("SELECT * FROM projects WHERE id = ?")
+    .get(projectId);
   if (!project) {
-    return { error: "El proyecto no existe" };
+    return "El proyecto no existe";
   }
   const isMember = db
-    .prepare("SELECT * FROM users_projects WHERE user_id = ? AND project_id = ?")
+    .prepare(
+      "SELECT * FROM users_projects WHERE user_id = ? AND project_id = ?",
+    )
     .get(userId, projectId);
   if (!isMember) {
-    return { error: "No tienes permiso para crear tareas en este proyecto" };
+    return "No tienes permiso para crear tareas en este proyecto";
+  }
+  return null;
+}
+
+function createTask(
+  userId,
+  title,
+  projectId,
+  state = TASK_STATES.TODO,
+  description = "",
+) {
+  const accessError = checkCreateAccess(userId, projectId);
+  if (accessError) {
+    return { error: accessError };
   }
   const stmt = db.prepare(
-    "INSERT INTO tasks (title, user_id, project_id, state, description) VALUES (?, ?, ?, ?, ?)"
+    "INSERT INTO tasks (title, user_id, project_id, state, description) VALUES (?, ?, ?, ?, ?)",
   );
   const result = stmt.run(title, userId, projectId, state, description);
   return {
@@ -43,7 +61,9 @@ function updateTask(userId, taskId, fields) {
   }
 
   const hasAccess = db
-    .prepare("SELECT * FROM users_projects WHERE user_id = ? AND project_id = ?")
+    .prepare(
+      "SELECT * FROM users_projects WHERE user_id = ? AND project_id = ?",
+    )
     .get(userId, task.project_id);
   if (!hasAccess) {
     return { error: "No tienes permiso para editar esta tarea" };
@@ -76,7 +96,9 @@ function deleteTask(userId, taskId) {
   }
 
   const hasAccess = db
-    .prepare("SELECT * FROM users_projects WHERE user_id = ? AND project_id = ?")
+    .prepare(
+      "SELECT * FROM users_projects WHERE user_id = ? AND project_id = ?",
+    )
     .get(userId, task.project_id);
   if (!hasAccess) {
     return { error: "No tienes permiso para eliminar esta tarea" };
@@ -86,4 +108,10 @@ function deleteTask(userId, taskId) {
   return { id: taskId };
 }
 
-module.exports = { getAllTasks, createTask, updateTask, deleteTask };
+module.exports = {
+  getAllTasks,
+  checkCreateAccess,
+  createTask,
+  updateTask,
+  deleteTask,
+};

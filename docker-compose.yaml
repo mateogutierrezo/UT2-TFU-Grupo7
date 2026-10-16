@@ -1,7 +1,7 @@
 services:
 
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
     container_name: redis-queue
     ports:
       - "6379:6379"
@@ -17,6 +17,8 @@ services:
       - ./data:/app/data
     expose:
       - "3000"
+    depends_on:
+      - redis
 
   api2:
     build: .
@@ -29,6 +31,22 @@ services:
       - ./data:/app/data
     expose:
       - "3000"
+    depends_on:
+      - redis
+
+  worker:
+    build: .
+    container_name: tfu-worker-1
+    command: ["node", "src/queue/taskWorker.js"]
+    env_file:
+      - .env
+    environment:
+      - INSTANCE_ID=worker-1
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - redis
+    restart: always
 
   loadbalancer:
     image: nginx:alpine

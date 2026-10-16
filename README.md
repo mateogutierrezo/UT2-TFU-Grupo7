@@ -34,9 +34,13 @@ La aplicación puede probarse mediante Postman o curl.
 ├── nginx/
 │   └── nginx.conf
 ├── scripts/
-│   └── prueba_isolation.sh
+│   ├── prueba_isolation.sh
+│   └── prueba_cola.sh          # demo Queue-Based Load Leveling
 └── src/
     ├── app.js
+    ├── queue/
+    │   ├── taskQueue.js        # definición de la cola Bull (instancia compartida)
+    │   └── taskWorker.js       # entrypoint del worker (único .process())
     ├── db/
     │   └── database.js
     ├── middlewares/
@@ -276,6 +280,30 @@ Esto permite que el balanceador pueda distribuir las solicitudes entre las difer
 2. Utilizar el mismo JWT para crear dos tareas.
 3. Observar en los logs que cada solicitud es procesada por una instancia diferente de la API.
 
+## Queue-Based Load Leveling
+
+La creación de tareas (`POST /api/tasks`) implementa el patrón **Queue-Based Load Leveling** (atributo Rendimiento, táctica *Limitar la respuesta a eventos*): en lugar de escribir directo en SQLite, la API encola el trabajo en Redis (Bull) y responde `202 Accepted` con un `jobId`. Un worker dedicado consume la cola con concurrencia 1 (SQLite es single-writer) y persiste a ritmo estable, absorbiendo ráfagas sin propagarlas al resto del sistema.
+
+```
+Cliente -> Nginx -> API (productor, .add()) -> Redis/Bull -> worker (.process(1)) -> SQLite
+                                                              (tfu-worker-1)
+```
+
+- La validación (zod) y los chequeos de negocio (proyecto existente + membresía) se hacen **sincrónicos** antes de encolar: si fallan se responde `4xx` de inmediato.
+- El resultado se consulta en `GET /api/tasks/jobs/:id` → `pending` / `done` (con la tarea creada y su id) / `failed` (con el motivo). Sin este endpoint el `202` sería una promesa incumplida.
+- Si Redis no está disponible, el `POST` responde `503` (reintentable).
+- Los jobs tienen 3 intentos con backoff de 3s.
+
+**Trade-offs documentados:** la creación pasa a ser eventualmente consistente (agrega latencia a cambio de absorber picos); no se encoló el registro porque implicaba transportar contraseñas en texto plano por la cola; limitación conocida: reintentos del cliente pueden duplicar tareas (mitigación futura: idempotency keys).
+
+**Demostración:**
+
+```bash
+bash scripts/prueba_cola.sh
+```
+
+Dispara 10 `POST` concurrentes (assert: 10×`202`), espera que los 10 jobs lleguen a `done`, verifica que `GET /api/tasks` trae las 10 nuevas, y prueba los casos de fallo (`404` ante job inexistente, `4xx` ante proyecto inexistente).
+
 ## Requisitos
 
 - Docker y Docker Compose
@@ -284,15 +312,17 @@ Esto permite que el balanceador pueda distribuir las solicitudes entre las difer
 
 ## Cómo levantar la demo
 
-1. Verificar que `.env` tenga `PORT`, `JWT_SECRET` y `DB_PATH`.
+1. Verificar que `.env` tenga `PORT`, `JWT_SECRET`, `DB_PATH`, `REDIS_HOST` y `REDIS_PORT` (ver `.env.example`).
 
-   `.env`
+    `.env`
 
-   ```python
-   PORT=3000
-   JWT_SECRET=un_secreto_muy_seguro
-   DB_PATH=/app/data/database.sqlite
-   ```
+    ```python
+    PORT=3000
+    JWT_SECRET=un_secreto_muy_seguro
+    DB_PATH=/app/data/database.sqlite
+    REDIS_HOST=redis
+    REDIS_PORT=6379
+    ```
 
 2. Levantar todo:
    ```bash

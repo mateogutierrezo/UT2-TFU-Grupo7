@@ -7,6 +7,7 @@ const { createTaskSchema, updateTaskSchema } = require("./tasks.schema");
 const router = express.Router();
 
 router.get("/", authenticate, tasksController.getTasks);
+router.get("/jobs/:id", authenticate, tasksController.getJobStatus);
 router.post("/", authenticate, validate(createTaskSchema), tasksController.createTask);
 router.patch("/:id", authenticate, validate(updateTaskSchema), tasksController.updateTask);
 router.delete("/:id", authenticate, tasksController.deleteTask);
