@@ -11,7 +11,7 @@ async function invalidateProjectCache(projectId) {
 
 async function getTasks(req, res) {
   const cached = await cache.getTasks(req.user.id);
-  
+
   if (cached) {
     res.set("X-Cache", "HIT");
     return res.status(200).json({ tasks: cached, instance: instance() });
@@ -86,19 +86,12 @@ async function getJobStatus(req, res) {
     queueState: state,
     instance: process.env.INSTANCE_ID || "desconocida",
   });
-
-  await invalidateProjectCache(result.project_id);
-  return res.status(201).json({
-    message: "Tarea creada correctamente",
-    task: result,
-    instance: instance(),
-  });
 }
 
 async function updateTask(req, res) {
   const taskId = parseInt(req.params.id, 10);
   const result = tasksService.updateTask(req.user.id, taskId, req.body);
-  
+
   if (result.error) {
     return res.status(400).json({ message: result.error });
   }
@@ -114,11 +107,11 @@ async function updateTask(req, res) {
 async function deleteTask(req, res) {
   const taskId = parseInt(req.params.id, 10);
   const result = tasksService.deleteTask(req.user.id, taskId);
-  
+
   if (result.error) {
     return res.status(400).json({ message: result.error });
   }
-  
+
   await invalidateProjectCache(result.project_id);
   return res.status(200).json({
     message: "Tarea eliminada correctamente",
