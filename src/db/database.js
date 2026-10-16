@@ -11,6 +11,8 @@ if (!fs.existsSync(dbDir)) {
 }
 
 const db = new Database(dbPath);
+db.pragma("journal_mode = WAL");   // lecturas concurrentes mientras otro escribe
+db.pragma("busy_timeout = 5000");  // espera hasta 5 s si el archivo está bloqueado
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
