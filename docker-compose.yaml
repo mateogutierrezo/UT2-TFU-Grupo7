@@ -6,6 +6,13 @@ x-api-healthcheck: &api-healthcheck
   start_period: 10s
 
 services:
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-queue
+    ports:
+      - "6379:6379"
+    restart: always
   api1:
     build: .
     container_name: tfu-api-1
@@ -18,6 +25,8 @@ services:
       - dbdata:/app/data
     expose:
       - "3000"
+    depends_on:
+      - redis
     healthcheck: *api-healthcheck
 
   api2:
@@ -32,6 +41,22 @@ services:
       - dbdata:/app/data
     expose:
       - "3000"
+    depends_on:
+      - redis
+
+  worker:
+    build: .
+    container_name: tfu-worker-1
+    command: ["node", "src/queue/taskWorker.js"]
+    env_file:
+      - .env
+    environment:
+      - INSTANCE_ID=worker-1
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - redis
+    restart: always
     healthcheck: *api-healthcheck
 
   loadbalancer:
