@@ -10,9 +10,15 @@ services:
   redis:
     image: redis:7-alpine
     container_name: redis-queue
-    ports:
-      - "6379:6379"
+    expose:
+      - "6379"
     restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   api1:
     build: .
     container_name: tfu-api-1
@@ -26,8 +32,8 @@ services:
     expose:
       - "3000"
     depends_on:
-      - redis
-    healthcheck: *api-healthcheck
+      redis:
+        condition: service_healthy
 
   api2:
     build: .
@@ -42,7 +48,8 @@ services:
     expose:
       - "3000"
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
 
   worker:
     build: .
@@ -53,11 +60,11 @@ services:
     environment:
       - INSTANCE_ID=worker-1
     volumes:
-      - ./data:/app/data
+      - dbdata:/app/data
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     restart: always
-    healthcheck: *api-healthcheck
 
   loadbalancer:
     image: nginx:alpine
