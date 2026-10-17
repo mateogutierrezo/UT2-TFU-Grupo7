@@ -1,27 +1,72 @@
+x-api-healthcheck: &api-healthcheck
+  test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+  interval: 5s
+  timeout: 3s
+  retries: 2
+  start_period: 10s
+
 services:
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-queue
+    expose:
+      - "6379"
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   api1:
     build: .
+    healthcheck: *api-healthcheck
     container_name: tfu-api-1
     env_file:
       - .env
     environment:
       - INSTANCE_ID=api-1
+      - FORCE_DB_FAIL=${API1_FORCE_DB_FAIL:-false}
     volumes:
-      - ./data:/app/data
+      - dbdata:/app/data
     expose:
       - "3000"
+    depends_on:
+      redis:
+        condition: service_healthy
 
   api2:
     build: .
+    healthcheck: *api-healthcheck
     container_name: tfu-api-2
     env_file:
       - .env
     environment:
       - INSTANCE_ID=api-2
+      - FORCE_DB_FAIL=${API2_FORCE_DB_FAIL:-false}
     volumes:
-      - ./data:/app/data
+      - dbdata:/app/data
     expose:
       - "3000"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  worker:
+    build: .
+    container_name: tfu-worker-1
+    command: ["node", "src/queue/taskWorker.js"]
+    env_file:
+      - .env
+    environment:
+      - INSTANCE_ID=worker-1
+    volumes:
+      - dbdata:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: always
 
   loadbalancer:
     image: nginx:alpine
@@ -31,7 +76,10 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - api1
-      - api2
+      api1:
+        condition: service_healthy
+      api2:
+        condition: service_healthy
 
-
+volumes:
+  dbdata:

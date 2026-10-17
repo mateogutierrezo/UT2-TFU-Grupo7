@@ -1,0 +1,263 @@
+﻿**********************
+Inicio de la transcripción de Windows PowerShell
+Hora de inicio: 20261016161312
+Nombre de usuario: LAPTOP-UDEKRHA1\Estudiante UCU
+Usuario RunAs: LAPTOP-UDEKRHA1\Estudiante UCU
+Nombre de la configuración: 
+Máquina: LAPTOP-UDEKRHA1 (Microsoft Windows NT 10.0.26300.0)
+Aplicación host: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+Id. de proceso: 15076
+PSVersion: 5.1.26100.9711
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9711
+BuildVersion: 10.0.26100.9711
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+La transcripción ha comenzado. El archivo de salida es evidencia-health.txt
+PS C:\ANDIS II\UT2-TFU-Grupo7> function Probe($n = 6) {
+  1..$n | ForEach-Object {
+    $r = curl.exe -s -w "`n%{http_code} %{time_total}s" http://localhost:8080/api/health
+    $r -replace "`n", " | "
+  }
+}
+PS C:\ANDIS II\UT2-TFU-Grupo7> docker compose down -v
+[+] Running 4/4
+ ✔ Container tfu-lb                Removed                                                                         0.0s
+ ✔ Container tfu-api-2             Removed                                                                         0.1s
+ ✔ Container tfu-api-1             Removed                                                                         0.1s
+ ✔ Network ut2-tfu-grupo7_default  Removed                                                                         0.3s
+PS C:\ANDIS II\UT2-TFU-Grupo7> docker compose up --build -d
+[+] Building 38.0s (16/16) FINISHED
+ => [internal] load local bake definitions                                                                         0.1s
+ => => reading from stdin 945B                                                                                     0.0s
+ => [api1 internal] load build definition from Dockerfile                                                          0.0s
+ => => transferring dockerfile: 299B                                                                               0.0s
+ => [api2 internal] load metadata for docker.io/library/node:22-alpine                                             2.1s
+ => [api2 internal] load .dockerignore                                                                             0.0s
+ => => transferring context: 103B                                                                                  0.0s
+ => [api2 1/7] FROM docker.io/library/node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18  4.4s
+ => => resolve docker.io/library/node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2b  0.0s
+ => => sha256:e554276b05e6306c5ad33cd85bfa7f0693083e21f6114db5abf60a20fb413039 1.26MB / 1.26MB                     0.3s
+ => => sha256:f7f2d304681aaa935c9cfd180850cf616ae843efce7682873d6521ded7268937 55.59MB / 55.59MB                   3.4s
+ => => sha256:d39db1cf9caa4f49c5a2e67111fbe6e0d5eea8ede550cb82f3dc2b79712688d6 447B / 447B                         0.5s
+ => => extracting sha256:f7f2d304681aaa935c9cfd180850cf616ae843efce7682873d6521ded7268937                          0.9s
+ => => extracting sha256:e554276b05e6306c5ad33cd85bfa7f0693083e21f6114db5abf60a20fb413039                          0.0s
+ => => extracting sha256:d39db1cf9caa4f49c5a2e67111fbe6e0d5eea8ede550cb82f3dc2b79712688d6                          0.0s
+ => [api1 internal] load build context                                                                             0.1s
+ => => transferring context: 5.61kB                                                                                0.0s
+ => [api2 2/7] WORKDIR /app                                                                                        0.2s
+ => [api1 3/7] RUN apk add --no-cache python3 make g++                                                             9.6s
+ => [api2 4/7] COPY package*.json ./                                                                               0.1s
+ => [api1 5/7] RUN npm ci --omit=dev                                                                               8.1s
+ => [api2 6/7] COPY src ./src                                                                                      0.1s
+ => [api1 7/7] RUN mkdir -p /app/data && chown -R node:node /app/data                                              0.2s
+ => [api1] exporting to image                                                                                     12.4s
+ => => exporting layers                                                                                            9.2s
+ => => exporting manifest sha256:7d4bb3e88282127410dfcef1a60916117a801b6d4553f22e55539a8af093ec9f                  0.0s
+ => => exporting config sha256:a213e735b59178e9c39b65ab6c31f8181dbd4ce9336c7a1e4f2d300e1828cb04                    0.0s
+ => => exporting attestation manifest sha256:fe172e580e4c255d313def5d492a52fb1d0cf66d67ae494a367dd946e6238834      0.0s
+ => => exporting manifest list sha256:32c6b521ea64270e4c60087bf65b13e37ae939634aa42ca5879f71db1a378f65             0.0s
+ => => naming to docker.io/library/ut2-tfu-grupo7-api1:latest                                                      0.0s
+ => => unpacking to docker.io/library/ut2-tfu-grupo7-api1:latest                                                   3.1s
+ => [api2] exporting to image                                                                                     12.4s
+ => => exporting layers                                                                                            9.2s
+ => => exporting manifest sha256:51089df0f517779c65864da7529c3067d5bc943c663163c6cc78deca73fb2dce                  0.0s
+ => => exporting config sha256:138d45210c8b8c31ef64e28c8531dbfd5c42d2dd19eb80ec07c34c89a3287774                    0.0s
+ => => exporting attestation manifest sha256:095d655bb731bf4ec12b91c13fcc395c91d094e80dfe9f1e02c4c9e4ae0434eb      0.0s
+ => => exporting manifest list sha256:c2f9e422d518a6cb51dd8a38f8b7f7983ef104278521ce2da6f61646d01fe49c             0.0s
+ => => naming to docker.io/library/ut2-tfu-grupo7-api2:latest                                                      0.0s
+ => => unpacking to docker.io/library/ut2-tfu-grupo7-api2:latest                                                   3.1s
+ => [api2] resolving provenance for metadata file                                                                  0.0s
+ => [api1] resolving provenance for metadata file                                                                  0.0s
+[+] Running 7/7
+ ✔ ut2-tfu-grupo7-api1             Built                                                                           0.0s
+ ✔ ut2-tfu-grupo7-api2             Built                                                                           0.0s
+ ✔ Network ut2-tfu-grupo7_default  Created                                                                         0.0s
+ ✔ Volume ut2-tfu-grupo7_dbdata    Created                                                                         0.0s
+ ✔ Container tfu-api-1             Healthy                                                                         6.7s
+ ✔ Container tfu-api-2             Healthy                                                                         6.7s
+ ✔ Container tfu-lb                Started                                                                         6.4s
+PS C:\ANDIS II\UT2-TFU-Grupo7> docker compose ps
+NAME        IMAGE                 COMMAND                  SERVICE        CREATED          STATUS                    POR
+TS
+tfu-api-1   ut2-tfu-grupo7-api1   "docker-entrypoint.s…"   api1           49 seconds ago   Up 48 seconds (healthy)   300
+0/tcp
+tfu-api-2   ut2-tfu-grupo7-api2   "docker-entrypoint.s…"   api2           49 seconds ago   Up 48 seconds (healthy)   300
+0/tcp
+tfu-lb      nginx:alpine          "/docker-entrypoint.…"   loadbalancer   48 seconds ago   Up 42 seconds             0.0
+.0.0:8080->80/tcp, [::]:8080->80/tcp
+PS C:\ANDIS II\UT2-TFU-Grupo7> Probe 6
+{"instance":"api-1","status":"ok","uptimeSeconds":101,"timestamp":"2026-10-16T19:16:59.715Z","checks":{"database":{"status":"up","responseTimeMs":1}}}
+200 0.013598s
+{"instance":"api-2","status":"ok","uptimeSeconds":101,"timestamp":"2026-10-16T19:16:59.774Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.013212s
+{"instance":"api-1","status":"ok","uptimeSeconds":101,"timestamp":"2026-10-16T19:16:59.857Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.025284s
+{"instance":"api-2","status":"ok","uptimeSeconds":101,"timestamp":"2026-10-16T19:16:59.923Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.012535s
+{"instance":"api-1","status":"ok","uptimeSeconds":101,"timestamp":"2026-10-16T19:17:00.064Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.027229s
+{"instance":"api-2","status":"ok","uptimeSeconds":101,"timestamp":"2026-10-16T19:17:00.144Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.014050s
+PS C:\ANDIS II\UT2-TFU-Grupo7> curl.exe -i http://localhost:8080/api/health/live
+HTTP/1.1 200 OK
+Server: nginx/1.31.4
+Date: Fri, 16 Oct 2026 19:17:17 GMT
+Content-Type: application/json; charset=utf-8
+Content-Length: 34
+Connection: keep-alive
+X-Powered-By: Express
+ETag: W/"22-KD1G2QappFrh6QWH+mUKrTInmRw"
+
+{"instance":"api-1","status":"ok"}
+PS C:\ANDIS II\UT2-TFU-Grupo7> curl.exe -i http://localhost:8080/api/health
+HTTP/1.1 200 OK
+Server: nginx/1.31.4
+Date: Fri, 16 Oct 2026 19:17:19 GMT
+Content-Type: application/json; charset=utf-8
+Content-Length: 150
+Connection: keep-alive
+X-Powered-By: Express
+ETag: W/"96-K73rrkfD8Xk3scWGtZ0O6cz8yNI"
+
+{"instance":"api-2","status":"ok","uptimeSeconds":121,"timestamp":"2026-10-16T19:17:19.809Z","checks":{"database":{"status":"u
+p","responseTimeMs":0}}}
+PS C:\ANDIS II\UT2-TFU-Grupo7> $env:API1_FORCE_DB_FAIL = "true"
+PS C:\ANDIS II\UT2-TFU-Grupo7> docker compose up -d api1
+[+] Running 1/1
+ ✔ Container tfu-api-1  Started                                                                                          1.6s
+PS C:\ANDIS II\UT2-TFU-Grupo7> docker compose restart loadbalancer
+[+] Restarting 1/1
+ ✔ Container tfu-lb  Started                                                                                             0.6s
+PS C:\ANDIS II\UT2-TFU-Grupo7> Start-Sleep -Seconds 20
+PS C:\ANDIS II\UT2-TFU-Grupo7> # a) la réplica directamente (sin pasar por Nginx)
+PS C:\ANDIS II\UT2-TFU-Grupo7> docker compose exec api1 node -e "fetch('http://127.0.0.1:3000/api/health').then(async r=>console.log(r.status, await r.text()))"
+503 {"instance":"api-1","status":"degraded","uptimeSeconds":38,"timestamp":"2026-10-16T19:18:17.949Z","checks":{"database":{"s
+tatus":"down"}}}
+PS C:\ANDIS II\UT2-TFU-Grupo7> # b) a través del balanceador
+PS C:\ANDIS II\UT2-TFU-Grupo7> Probe 8
+{"instance":"api-2","status":"ok","uptimeSeconds":179,"timestamp":"2026-10-16T19:18:18.064Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.006745s
+{"instance":"api-2","status":"ok","uptimeSeconds":179,"timestamp":"2026-10-16T19:18:18.090Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.004381s
+{"instance":"api-2","status":"ok","uptimeSeconds":179,"timestamp":"2026-10-16T19:18:18.113Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.005177s
+{"instance":"api-2","status":"ok","uptimeSeconds":180,"timestamp":"2026-10-16T19:18:18.135Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.004260s
+{"instance":"api-2","status":"ok","uptimeSeconds":180,"timestamp":"2026-10-16T19:18:18.158Z","checks":{"database":{"status":"up","responseTimeMs":1}}}
+200 0.003756s
+{"instance":"api-2","status":"ok","uptimeSeconds":180,"timestamp":"2026-10-16T19:18:18.180Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.003608s
+{"instance":"api-2","status":"ok","uptimeSeconds":180,"timestamp":"2026-10-16T19:18:18.205Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.003895s
+{"instance":"api-2","status":"ok","uptimeSeconds":180,"timestamp":"2026-10-16T19:18:18.227Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.003555s
+PS C:\ANDIS II\UT2-TFU-Grupo7> # c) estado y logs
+PS C:\ANDIS II\UT2-TFU-Grupo7> docker compose ps
+NAME        IMAGE                 COMMAND                  SERVICE        CREATED          STATUS                      PORTS
+tfu-api-1   ut2-tfu-grupo7-api1   "docker-entrypoint.s…"   api1           40 seconds ago   Up 38 seconds (unhealthy)   3000/tc
+p
+tfu-api-2   ut2-tfu-grupo7-api2   "docker-entrypoint.s…"   api2           3 minutes ago    Up 3 minutes (healthy)      3000/tc
+p
+tfu-lb      nginx:alpine          "/docker-entrypoint.…"   loadbalancer   3 minutes ago    Up 37 seconds               0.0.0.0
+:8080->80/tcp, [::]:8080->80/tcp
+PS C:\ANDIS II\UT2-TFU-Grupo7> docker compose logs --tail 10 api1
+tfu-api-1  | [health] api-1 - fallo de BD: falla simulada (FORCE_DB_FAIL)
+tfu-api-1  | [health] api-1 - fallo de BD: falla simulada (FORCE_DB_FAIL)
+tfu-api-1  | [health] api-1 - fallo de BD: falla simulada (FORCE_DB_FAIL)
+tfu-api-1  | [health] api-1 - fallo de BD: falla simulada (FORCE_DB_FAIL)
+tfu-api-1  | [health] api-1 - fallo de BD: falla simulada (FORCE_DB_FAIL)
+tfu-api-1  | [health] api-1 - fallo de BD: falla simulada (FORCE_DB_FAIL)
+tfu-api-1  | [health] api-1 - fallo de BD: falla simulada (FORCE_DB_FAIL)
+tfu-api-1  | [health] api-1 - fallo de BD: falla simulada (FORCE_DB_FAIL)
+tfu-api-1  | [health] api-1 - fallo de BD: falla simulada (FORCE_DB_FAIL)
+tfu-api-1  | [health] api-1 - fallo de BD: falla simulada (FORCE_DB_FAIL)
+PS C:\ANDIS II\UT2-TFU-Grupo7> Remove-Item Env:API1_FORCE_DB_FAIL
+PS C:\ANDIS II\UT2-TFU-Grupo7> docker compose up -d api1
+[+] Running 1/1
+ ✔ Container tfu-api-1  Started                                                                                          1.6s
+PS C:\ANDIS II\UT2-TFU-Grupo7> docker compose restart loadbalancer
+[+] Restarting 1/1
+ ✔ Container tfu-lb  Started                                                                                             0.5s
+PS C:\ANDIS II\UT2-TFU-Grupo7> Start-Sleep -Seconds 20
+PS C:\ANDIS II\UT2-TFU-Grupo7> docker compose ps
+NAME        IMAGE                 COMMAND                  SERVICE        CREATED          STATUS                    PORTS
+tfu-api-1   ut2-tfu-grupo7-api1   "docker-entrypoint.s…"   api1           22 seconds ago   Up 21 seconds (healthy)   3000/tcp
+tfu-api-2   ut2-tfu-grupo7-api2   "docker-entrypoint.s…"   api2           3 minutes ago    Up 3 minutes (healthy)    3000/tcp
+tfu-lb      nginx:alpine          "/docker-entrypoint.…"   loadbalancer   3 minutes ago    Up 20 seconds             0.0.0.0:8
+080->80/tcp, [::]:8080->80/tcp
+PS C:\ANDIS II\UT2-TFU-Grupo7> Probe 6
+{"instance":"api-1","status":"ok","uptimeSeconds":22,"timestamp":"2026-10-16T19:19:00.558Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.008501s
+{"instance":"api-2","status":"ok","uptimeSeconds":222,"timestamp":"2026-10-16T19:19:00.598Z","checks":{"database":{"status":"up","responseTimeMs":1}}}
+200 0.007001s
+{"instance":"api-1","status":"ok","uptimeSeconds":23,"timestamp":"2026-10-16T19:19:00.625Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.004831s
+{"instance":"api-2","status":"ok","uptimeSeconds":222,"timestamp":"2026-10-16T19:19:00.651Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.004266s
+{"instance":"api-1","status":"ok","uptimeSeconds":23,"timestamp":"2026-10-16T19:19:00.674Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.003795s
+{"instance":"api-2","status":"ok","uptimeSeconds":222,"timestamp":"2026-10-16T19:19:00.701Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.005041s
+PS C:\ANDIS II\UT2-TFU-Grupo7> docker compose stop api1
+[+] Stopping 1/1
+ ✔ Container tfu-api-1  Stopped                                                                                          1.2s
+PS C:\ANDIS II\UT2-TFU-Grupo7> Probe 6
+{"instance":"api-2","status":"ok","uptimeSeconds":235,"timestamp":"2026-10-16T19:19:13.076Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 2.014795s
+{"instance":"api-2","status":"ok","uptimeSeconds":235,"timestamp":"2026-10-16T19:19:13.106Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.005655s
+{"instance":"api-2","status":"ok","uptimeSeconds":235,"timestamp":"2026-10-16T19:19:13.151Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.021350s
+{"instance":"api-2","status":"ok","uptimeSeconds":235,"timestamp":"2026-10-16T19:19:13.198Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.024708s
+{"instance":"api-2","status":"ok","uptimeSeconds":235,"timestamp":"2026-10-16T19:19:13.231Z","checks":{"database":{"status":"up","responseTimeMs":0}}}
+200 0.005013s
+{"instance":"api-2","status":"ok","uptimeSeconds":235,"timestamp":"2026-10-16T19:19:13.254Z","checks":{"database":{"status":"up","responseTimeMs":1}}}
+200 0.003291s
+PS C:\ANDIS II\UT2-TFU-Grupo7> docker compose start api1
+[+] Running 1/1
+ ✔ Container tfu-api-1  Started                                                                                          0.2s
+PS C:\ANDIS II\UT2-TFU-Grupo7> Start-Sleep -Seconds 15
+PS C:\ANDIS II\UT2-TFU-Grupo7> docker compose ps
+NAME        IMAGE                 COMMAND                  SERVICE        CREATED              STATUS                    PORTS
+tfu-api-1   ut2-tfu-grupo7-api1   "docker-entrypoint.s…"   api1           About a minute ago   Up 40 seconds (healthy)   3000/
+tcp
+tfu-api-2   ut2-tfu-grupo7-api2   "docker-entrypoint.s…"   api2           4 minutes ago        Up 4 minutes (healthy)    3000/
+tcp
+tfu-lb      nginx:alpine          "/docker-entrypoint.…"   loadbalancer   4 minutes ago        Up About a minute         0.0.0
+.0:8080->80/tcp, [::]:8080->80/tcp
+PS C:\ANDIS II\UT2-TFU-Grupo7> docker compose stop api1 api2
+[+] Stopping 2/2
+ ✔ Container tfu-api-1  Stopped                                                                                          1.3s
+ ✔ Container tfu-api-2  Stopped                                                                                          1.4s
+PS C:\ANDIS II\UT2-TFU-Grupo7> curl.exe -i http://localhost:8080/api/health
+HTTP/1.1 504 Gateway Time-out
+Server: nginx/1.31.4
+Date: Fri, 16 Oct 2026 19:20:14 GMT
+Content-Type: application/json
+Content-Length: 65
+Connection: keep-alive
+
+{"status":"unavailable","message":"Ninguna instancia disponible"}
+PS C:\ANDIS II\UT2-TFU-Grupo7> docker compose start api1 api2
+[+] Running 2/2
+ ✔ Container tfu-api-2  Started                                                                                          0.2s
+ ✔ Container tfu-api-1  Started                                                                                          0.2s
+PS C:\ANDIS II\UT2-TFU-Grupo7> Start-Sleep -Seconds 15
+PS C:\ANDIS II\UT2-TFU-Grupo7> docker compose ps
+NAME        IMAGE                 COMMAND                  SERVICE        CREATED              STATUS                    PORTS
+tfu-api-1   ut2-tfu-grupo7-api1   "docker-entrypoint.s…"   api1           About a minute ago   Up 17 seconds (healthy)   3000/
+tcp
+tfu-api-2   ut2-tfu-grupo7-api2   "docker-entrypoint.s…"   api2           5 minutes ago        Up 17 seconds (healthy)   3000/
+tcp
+tfu-lb      nginx:alpine          "/docker-entrypoint.…"   loadbalancer   5 minutes ago        Up About a minute         0.0.0
+.0:8080->80/tcp, [::]:8080->80/tcp
+PS C:\ANDIS II\UT2-TFU-Grupo7> Stop-Transcript
+**********************
+Fin de la transcripción de Windows PowerShell
+Hora de finalización: 20261016162039
+**********************
