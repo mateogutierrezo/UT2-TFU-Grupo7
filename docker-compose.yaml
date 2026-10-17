@@ -21,6 +21,7 @@ services:
 
   api1:
     build: .
+    healthcheck: *api-healthcheck
     container_name: tfu-api-1
     env_file:
       - .env
@@ -37,6 +38,7 @@ services:
 
   api2:
     build: .
+    healthcheck: *api-healthcheck
     container_name: tfu-api-2
     env_file:
       - .env
