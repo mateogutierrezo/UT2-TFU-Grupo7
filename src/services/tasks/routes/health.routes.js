@@ -1,6 +1,7 @@
 const express = require("express");
 const fs = require("fs");
 const db = require("../db/database");
+const projectsSoap = require("../clients/projects.soap.client");
 
 const router = express.Router();
 const instanceId = () => process.env.INSTANCE_ID || "desconocida";
@@ -38,7 +39,12 @@ router.get("/", (req, res) => {
     status: healthy ? "ok" : "degraded",
     uptimeSeconds: Math.floor(process.uptime()),
     timestamp: new Date().toISOString(),
-    checks: { database },
+    checks: {
+      database,
+      dependencies: {
+        projectsCircuit: projectsSoap.getCircuitStats(),
+      },
+    },
   });
 });
 

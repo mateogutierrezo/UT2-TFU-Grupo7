@@ -1,3 +1,5 @@
+const { CircuitBreaker } = require("../patron/circuitBreaker");
+
 const SOAP_URL =
   process.env.PROJECTS_SOAP_URL || "http://localhost:3001/soap/projects";
 const TIMEOUT_MS = Number(process.env.PROJECTS_SOAP_TIMEOUT_MS) || 2000;
@@ -32,7 +34,12 @@ function unavailable(message) {
   return err;
 }
 
-async function callSoap(operation, innerBody) {
+function envInt(name, fallback) {
+  const value = Number(process.env[name]);
+  return Number.isInteger(value) && value > 0 ? value : fallback;
+}
+
+async function callSoapRaw(operation, innerBody) {
   const envelope = `<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tns="http://projects.tfu.example/soap"><soap:Body><tns:${operation}>${innerBody}</tns:${operation}></soap:Body></soap:Envelope>`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -61,6 +68,40 @@ async function callSoap(operation, innerBody) {
     throw unavailable(`HTTP ${res.status}`);
   }
   return text;
+}
+
+const breaker = new CircuitBreaker(callSoapRaw, {
+  name: "projects",
+  timeoutMs: envInt("PROJECTS_CB_TIMEOUT_MS", TIMEOUT_MS + 500),
+  volumeThreshold: envInt("PROJECTS_CB_VOLUME_THRESHOLD", 5),
+  errorThresholdPercentage: envInt(
+    "PROJECTS_CB_ERROR_THRESHOLD_PERCENTAGE",
+    50,
+  ),
+  resetTimeoutMs: envInt("PROJECTS_CB_RESET_TIMEOUT_MS", 10000),
+  rollingCountTimeoutMs: envInt(
+    "PROJECTS_CB_ROLLING_COUNT_TIMEOUT_MS",
+    10000,
+  ),
+  onStateChange: (event) => {
+    console.warn(
+      `[circuit:projects] ${event.from} -> ${event.to} (${event.reason})`,
+    );
+  },
+});
+
+async function callSoap(operation, innerBody) {
+  try {
+    return await breaker.fire(operation, innerBody);
+  } catch (err) {
+    if (err.code === "EOPENBREAKER") {
+      throw unavailable("Servicio de proyectos no disponible (circuito abierto)");
+    }
+    if (err.code === "ETIMEDOUT") {
+      throw unavailable("Tiempo de espera agotado al consultar proyectos");
+    }
+    throw unavailable(err.message);
+  }
 }
 
 async function checkMembership(userId, projectId) {
@@ -109,4 +150,6 @@ module.exports = {
   getProjectIdsForUser,
   assignUserToProject,
   SOAP_URL,
+  breaker,
+  getCircuitStats: () => breaker.getStats(),
 };
