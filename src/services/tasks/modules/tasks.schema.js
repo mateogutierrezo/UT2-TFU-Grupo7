@@ -6,7 +6,7 @@ const noHtmlMessage = "El campo contiene caracteres no permitidos";
 
 const stateIdSchema = z.number().int().refine(
   (val) => Object.values(TASK_STATES).includes(val),
-  "Estado inválido"
+  "Estado inválido",
 );
 
 const createTaskSchema = z.object({
@@ -40,7 +40,10 @@ const updateTaskSchema = z
       data.title !== undefined ||
       data.description !== undefined ||
       data.state !== undefined,
-    { message: "Debes enviar al menos un campo (title, description o state)" }
+    {
+      message:
+        "Debes enviar al menos un campo (title, description o state)",
+    },
   );
 
 module.exports = { createTaskSchema, updateTaskSchema };

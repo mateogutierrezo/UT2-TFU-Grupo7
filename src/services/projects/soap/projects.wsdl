@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tns="http://projects.tfu.example/soap" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" name="ProjectService" targetNamespace="http://projects.tfu.example/soap">
+  <wsdl:types>
+    <xsd:schema elementFormDefault="qualified" targetNamespace="http://projects.tfu.example/soap">
+      <xsd:element name="AssignUserToProject">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="actorId" type="xsd:int"/>
+            <xsd:element name="projectId" type="xsd:int"/>
+            <xsd:element name="userId" type="xsd:int"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="AssignUserToProjectResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="success" type="xsd:boolean"/>
+            <xsd:element name="error" type="xsd:string"/>
+            <xsd:element name="user_id" type="xsd:int"/>
+            <xsd:element name="project_id" type="xsd:int"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="CheckMembership">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="userId" type="xsd:int"/>
+            <xsd:element name="projectId" type="xsd:int"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="CheckMembershipResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="projectExists" type="xsd:boolean"/>
+            <xsd:element name="isMember" type="xsd:boolean"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="GetProjectIdsForUser">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="userId" type="xsd:int"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="GetProjectIdsForUserResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="projectId" type="xsd:int" maxOccurs="unbounded" minOccurs="0"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:schema>
+  </wsdl:types>
+  <wsdl:message name="AssignUserToProjectRequest">
+    <wsdl:part name="parameters" element="tns:AssignUserToProject"/>
+  </wsdl:message>
+  <wsdl:message name="AssignUserToProjectResponseMessage">
+    <wsdl:part name="parameters" element="tns:AssignUserToProjectResponse"/>
+  </wsdl:message>
+  <wsdl:message name="CheckMembershipRequest">
+    <wsdl:part name="parameters" element="tns:CheckMembership"/>
+  </wsdl:message>
+  <wsdl:message name="CheckMembershipResponseMessage">
+    <wsdl:part name="parameters" element="tns:CheckMembershipResponse"/>
+  </wsdl:message>
+  <wsdl:message name="GetProjectIdsForUserRequest">
+    <wsdl:part name="parameters" element="tns:GetProjectIdsForUser"/>
+  </wsdl:message>
+  <wsdl:message name="GetProjectIdsForUserResponseMessage">
+    <wsdl:part name="parameters" element="tns:GetProjectIdsForUserResponse"/>
+  </wsdl:message>
+  <wsdl:portType name="ProjectServicePortType">
+    <wsdl:operation name="AssignUserToProject">
+      <wsdl:input message="tns:AssignUserToProjectRequest"/>
+      <wsdl:output message="tns:AssignUserToProjectResponseMessage"/>
+    </wsdl:operation>
+    <wsdl:operation name="CheckMembership">
+      <wsdl:input message="tns:CheckMembershipRequest"/>
+      <wsdl:output message="tns:CheckMembershipResponseMessage"/>
+    </wsdl:operation>
+    <wsdl:operation name="GetProjectIdsForUser">
+      <wsdl:input message="tns:GetProjectIdsForUserRequest"/>
+      <wsdl:output message="tns:GetProjectIdsForUserResponseMessage"/>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="ProjectServiceBinding" type="tns:ProjectServicePortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="AssignUserToProject">
+      <soap:operation soapAction="urn:AssignUserToProject"/>
+      <wsdl:input><soap:body use="literal"/></wsdl:input>
+      <wsdl:output><soap:body use="literal"/></wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CheckMembership">
+      <soap:operation soapAction="urn:CheckMembership"/>
+      <wsdl:input><soap:body use="literal"/></wsdl:input>
+      <wsdl:output><soap:body use="literal"/></wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetProjectIdsForUser">
+      <soap:operation soapAction="urn:GetProjectIdsForUser"/>
+      <wsdl:input><soap:body use="literal"/></wsdl:input>
+      <wsdl:output><soap:body use="literal"/></wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="ProjectService">
+    <wsdl:port name="ProjectServicePort" binding="tns:ProjectServiceBinding">
+      <soap:address location="http://projects-service:3001/soap/projects"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

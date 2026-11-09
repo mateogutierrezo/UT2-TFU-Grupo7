@@ -1,0 +1,3 @@
+﻿tasks-service-1  | [circuit:projects] CLOSED -> OPEN (100% de fallas en 5 llamadas)
+tasks-service-1  | [circuit:projects] OPEN -> HALF_OPEN (venci├│ resetTimeoutMs)
+tasks-service-1  | [circuit:projects] HALF_OPEN -> CLOSED (la llamada de prueba fue exitosa)

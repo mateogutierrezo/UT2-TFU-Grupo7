@@ -1,85 +1,92 @@
-x-api-healthcheck: &api-healthcheck
-  test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+x-service-healthcheck: &service-healthcheck
+  test:
+    [
+      "CMD",
+      "node",
+      "-e",
+      "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+    ]
   interval: 5s
   timeout: 3s
   retries: 2
   start_period: 10s
 
 services:
-
-  redis:
-    image: redis:7-alpine
-    container_name: redis-queue
-    expose:
-      - "6379"
-    restart: always
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-
-  api1:
-    build: .
-    healthcheck: *api-healthcheck
-    container_name: tfu-api-1
+  identity-service:            # nombre DNS = host desde otros servicios
+    build: .                   # mismo Dockerfile, distinto CMD
+    command: ["node", "src/services/identity/app.js"]
     env_file:
       - .env
     environment:
-      - INSTANCE_ID=api-1
-      - FORCE_DB_FAIL=${API1_FORCE_DB_FAIL:-false}
+      - SERVICE_NAME=identity
+      - INSTANCE_ID=identity-1
+      - DB_PATH=/app/data/identity.sqlite
     volumes:
-      - dbdata:/app/data
+      - identity-data:/app/data
     expose:
       - "3000"
-    depends_on:
-      redis:
-        condition: service_healthy
+    healthcheck: *service-healthcheck
+    restart: unless-stopped
 
-  api2:
+  projects-service:
     build: .
-    healthcheck: *api-healthcheck
-    container_name: tfu-api-2
+    command: ["node", "src/services/projects/app.js"]
     env_file:
       - .env
     environment:
-      - INSTANCE_ID=api-2
-      - FORCE_DB_FAIL=${API2_FORCE_DB_FAIL:-false}
+      - SERVICE_NAME=projects
+      - INSTANCE_ID=projects-1
+      - DB_PATH=/app/data/projects.sqlite
+      # Proyectos consulta a Identidad (REST interno) para validar usuarios.
+      - IDENTITY_SERVICE_URL=http://identity-service:3000
+      - IDENTITY_TIMEOUT_MS=2000
+      # La fachada REST /api/projects/assign consume SOAP contra sí mismo.
+      - PROJECTS_SOAP_URL=http://projects-service:3000/soap/projects
+      - PROJECTS_SOAP_TIMEOUT_MS=2000
     volumes:
-      - dbdata:/app/data
+      - projects-data:/app/data
     expose:
       - "3000"
-    depends_on:
-      redis:
-        condition: service_healthy
+    healthcheck: *service-healthcheck
+    restart: unless-stopped
 
-  worker:
+  tasks-service:
     build: .
-    container_name: tfu-worker-1
-    command: ["node", "src/queue/taskWorker.js"]
+    command: ["node", "src/services/tasks/app.js"]
     env_file:
       - .env
     environment:
-      - INSTANCE_ID=worker-1
+      - SERVICE_NAME=tasks
+      - INSTANCE_ID=tasks-1
+      - DB_PATH=/app/data/tasks.sqlite
+      # Tareas consume el servicio SOAP de Proyectos (contrato en ?wsdl).
+      - PROJECTS_SOAP_URL=http://projects-service:3000/soap/projects
+      - PROJECTS_SOAP_TIMEOUT_MS=2000
     volumes:
-      - dbdata:/app/data
-    depends_on:
-      redis:
-        condition: service_healthy
-    restart: always
+      - tasks-data:/app/data
+    expose:
+      - "3000"
+    healthcheck: *service-healthcheck
+    # Sin depends_on hacia projects-service: Tareas debe poder iniciar y
+    # responder aunque Proyectos esté caído (aislamiento de fallos).
+    restart: unless-stopped
 
-  loadbalancer:
+  gateway:
     image: nginx:alpine
-    container_name: tfu-lb
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
       - "8080:80"
     depends_on:
-      api1:
+      identity-service:
         condition: service_healthy
-      api2:
+      projects-service:
         condition: service_healthy
+      tasks-service:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
-  dbdata:
+  identity-data:
+  projects-data:
+  tasks-data:

@@ -1,0 +1,3 @@
+// identity-service no consume a ningún otro servicio.
+// Carpeta reservada para clientes salientes futuros (si se agregara
+// notificación de registro, por ejemplo).
