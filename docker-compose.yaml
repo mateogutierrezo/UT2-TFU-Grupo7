@@ -40,6 +40,9 @@ services:
       # Proyectos consulta a Identidad (REST interno) para validar usuarios.
       - IDENTITY_SERVICE_URL=http://identity-service:3000
       - IDENTITY_TIMEOUT_MS=2000
+      # La fachada REST /api/projects/assign consume SOAP contra sí mismo.
+      - PROJECTS_SOAP_URL=http://projects-service:3000/soap/projects
+      - PROJECTS_SOAP_TIMEOUT_MS=2000
     volumes:
       - projects-data:/app/data
     expose:
