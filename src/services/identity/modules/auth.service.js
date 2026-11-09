@@ -1,0 +1,40 @@
+const bcrypt = require("bcryptjs");
+const db = require("../db/database");
+
+const SALT_ROUNDS = 10;
+
+function findUserByEmail(email) {
+  const stmt = db.prepare("SELECT * FROM users WHERE email = ?");
+  return stmt.get(email);
+}
+
+function findUserById(id) {
+  const stmt = db.prepare("SELECT id, email FROM users WHERE id = ?");
+  return stmt.get(id);
+}
+
+function existsUser(id) {
+  const stmt = db.prepare("SELECT 1 FROM users WHERE id = ?");
+  return !!stmt.get(id);
+}
+
+function createUser(email, password) {
+  const hashedPassword = bcrypt.hashSync(password, SALT_ROUNDS);
+
+  const stmt = db.prepare("INSERT INTO users (email, password) VALUES (?, ?)");
+  const result = stmt.run(email, hashedPassword);
+
+  return { id: result.lastInsertRowid, email };
+}
+
+function validatePassword(plainPassword, hashedPassword) {
+  return bcrypt.compareSync(plainPassword, hashedPassword);
+}
+
+module.exports = {
+  findUserByEmail,
+  findUserById,
+  existsUser,
+  createUser,
+  validatePassword,
+};
