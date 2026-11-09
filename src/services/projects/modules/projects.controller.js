@@ -1,4 +1,5 @@
 const projectsService = require("./projects.service");
+const projectsSoap = require("../clients/projects.soap.client");
 
 function getProjects(req, res) {
   const projects = projectsService.getProjects(req.user.id);
@@ -22,16 +23,32 @@ function createProject(req, res) {
 
 async function assignUser(req, res) {
   const { project_id, user_id } = req.body;
-  const result = await projectsService.assignUser(req.user.id, project_id, user_id);
-  if (result.error) {
-    return res.status(400).json({ message: result.error });
+  try {
+    const soapResult = await projectsSoap.assignUserToProject(
+      req.user.id,
+      project_id,
+      user_id,
+    );
+    if (!soapResult.success) {
+      return res.status(400).json({ message: soapResult.error });
+    }
+    return res.status(200).json({
+      message: "Usuario asignado al proyecto correctamente",
+      result: {
+        user_id: soapResult.user_id,
+        project_id: soapResult.project_id,
+      },
+      service: process.env.SERVICE_NAME || "projects-service",
+      instance: process.env.INSTANCE_ID || "desconocida",
+    });
+  } catch (err) {
+    if (err && err.code === "PROJECTS_UNAVAILABLE") {
+      return res.status(503).json({
+        message: "Servicio de proyectos no disponible (temporal)",
+      });
+    }
+    throw err;
   }
-  return res.status(200).json({
-    message: "Usuario asignado al proyecto correctamente",
-    result,
-    service: process.env.SERVICE_NAME || "projects-service",
-    instance: process.env.INSTANCE_ID || "desconocida",
-  });
 }
 
 module.exports = { getProjects, createProject, assignUser };
